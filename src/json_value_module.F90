@@ -1386,6 +1386,11 @@
     logical(LK)                         :: is_equal  !! true if the string are
                                                      !! lexically equal
 
+    integer :: i     !! counter
+    integer :: nmin  !! length of the shorter string
+    integer :: c1    !! character code in `name1`, folded to lowercase
+    integer :: c2    !! character code in `name2`, folded to lowercase
+
     !must be the same length if we are treating
     !trailing spaces as significant, so do a
     !quick test of this first:
@@ -1397,7 +1402,23 @@
     if (json%case_sensitive_keys) then
         is_equal = name1 == name2
     else
-        is_equal = lowercase_string(name1) == lowercase_string(name2)
+        is_equal = .false.
+        nmin = min(len(name1),len(name2))
+        do i = 1, nmin
+            if (name1(i:i) == name2(i:i)) cycle
+            c1 = iachar(name1(i:i))
+            c2 = iachar(name2(i:i))
+            if (c1 >= iachar('A') .and. c1 <= iachar('Z')) c1 = c1 + (iachar('a') - iachar('A'))
+            if (c2 >= iachar('A') .and. c2 <= iachar('Z')) c2 = c2 + (iachar('a') - iachar('A'))
+            if (c1 /= c2) return
+        end do
+        ! the rest of the longer string must be blank:
+        if (len(name1) > nmin) then
+            if (len_trim(name1(nmin+1:)) /= 0) return
+        else if (len(name2) > nmin) then
+            if (len_trim(name2(nmin+1:)) /= 0) return
+        end if
+        is_equal = .true.
     end if
 
     end function name_strings_equal
